@@ -20,6 +20,8 @@ cd ~
 #systemctl enable docker
 #systemctl start docker
 
+apt-get install nfs-common
+
 TOKEN=$(cat /etc/kubicorn/cluster.json | jq -r '.values.itemMap.INJECTEDTOKEN')
 MASTER=$(cat /etc/kubicorn/cluster.json | jq -r '.values.itemMap.INJECTEDMASTER')
 
