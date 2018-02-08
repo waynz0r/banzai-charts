@@ -23,7 +23,7 @@ hostnamectl set-hostname $(hostname -f)
 #     kubeadm=1.7.0-00 \
 #     cloud-utils
 
-apt-get install nfs-common
+apt-get install -y nfs-common
 
 sed -i -e 's|Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"|Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"\nEnvironment="KUBELET_EXTRA_ARGS=--cloud-provider=aws --feature-gates=DevicePlugins=true"|' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
