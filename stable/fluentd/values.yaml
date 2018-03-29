@@ -1,0 +1,95 @@
+# Default values for fluentd.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+image:
+  repository: banzaicloud/fluentd
+  tag: v1.1.3
+  ## Specify an imagePullPolicy (Required)
+  ## It's recommended to change this to 'Always' if the image tag is 'latest'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#updating-images
+  pullPolicy: IfNotPresent
+
+rbac:
+  create: false
+  serviceAccountName: default
+
+kind: Deployment
+
+plugins:
+  elasticsearch:
+    enabled: true
+    env:
+      ES_OUTPUT_HOST: es-server.default.svc.cluster.local
+      ES_OUTPUT_PORT: 9200
+      ES_BUFFER_CHUNK_LIMIT: 2M
+      ES_BUFFER_QUEUE_LIMIT: 8
+
+service:
+  type: ClusterIP
+  externalPort: 80
+  ports:
+    - name: "monitor-agent"
+      protocol: TCP
+      containerPort: 24220
+
+ingress:
+  enabled: false
+  # Used to create an Ingress and Service record.
+  # hosts:
+  #   - name: "http-input.local"
+  #     protocol: TCP
+  #     serviceName: http-input
+  #     servicePort: 9880
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  tls: {}
+    # Secrets must be manually created in the namespace.
+    # - secretName: http-input-tls
+    #   hosts:
+    #     - http-input.local
+
+## Additional container environment variable
+## For instance to add a http_proxy
+##
+env: {}
+ # - name: FLUENTD_OPT
+ #   value: "--verbose "
+
+## Annotations to add to the Pods
+podAnnotation: {}
+
+## ConfigMap override where fullname is {{.Release.Name}}-{{.Values.configMapOverrideName}}
+## Defining configMapOverrideName will cause templates/configmap.yaml
+## to NOT generate a ConfigMap resource
+##
+configMapOverrideName: ""
+
+## Extra volumes containing additional files required for fluentd to work
+## (eg. CA certificates)
+## Ref: https://kubernetes.io/docs/concepts/storage/volumes/
+##
+extraVolumes: []
+
+## Extra volume mounts for the fluentd pod.
+## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/
+##
+extraVolumeMounts: []
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 500m
+  #  memory: 200Mi
+  # requests:
+  #  cpu: 500m
+  #  memory: 200Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

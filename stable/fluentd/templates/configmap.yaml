@@ -1,0 +1,72 @@
+{{- if (empty .Values.configMapOverrideName) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fluentd.fullname" . }}
+  labels:
+    app: {{ template "fluentd.name" . }}
+    chart: {{ template "fluentd.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  general.conf: |
+    # Prevent fluentd from handling records containing its own logs. Otherwise
+    # it can lead to an infinite loop, when error in sending one message generates
+    # another message which also fails to be sent and so on.
+    <match fluentd.**>
+      @type null
+    </match>
+    # Used for health checking
+    <source>
+      @type http
+      port 9880
+      bind 0.0.0.0
+    </source>
+    # Emits internal metrics to every minute, and also exposes them on port
+    # 24220. Useful for determining if an output plugin is retryring/erroring,
+    # or determining the buffer queue length.
+    <source>
+      @type monitor_agent
+      bind 0.0.0.0
+      port 24220
+      tag fluentd.monitor.metrics
+    </source>
+  system.conf: |-
+    <system>
+      root_dir /tmp/fluentd-buffers/
+    </system>
+  forward-input.conf: |
+    <source>
+      @type forward
+      port 24224
+      bind 0.0.0.0
+    </source>
+{{ if .Values.plugins.elasticsearch }}
+{{ if .Values.plugins.elasticsearch.enabled }}
+  output.conf: |
+    <match **>
+      @id elasticsearch
+      @type elasticsearch
+      @log_level info
+      include_tag_key true
+      host "#{ENV['ES_OUTPUT_HOST']}"
+      port "#{ENV['ES_OUTPUT_PORT']}"
+      logstash_format true
+      <buffer>
+        @type file
+        path /var/log/fluentd-buffers/elasticsearch.all.buffer
+        flush_mode interval
+        flush_interval 5s
+        flush_thread_count 3
+        retry_max_interval 60
+        retry_forever
+        retry_type exponential_backoff
+        chunk_limit_size "#{ENV['ES_BUFFER_CHUNK_LIMIT']}"
+        queue_limit_length "#{ENV['ES_BUFFER_QUEUE_LIMIT']}"
+        overflow_action block
+      </buffer>
+    </match>
+{{- end }}
+{{- end }}
+
+{{- end -}}

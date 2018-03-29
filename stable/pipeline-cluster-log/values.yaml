@@ -1,0 +1,151 @@
+---
+
+backend:
+  type: forward
+  forward:
+    host: fluentd
+    port: 24284
+    tls:
+      enabled: true
+      verify: Off
+      secretname: fluent-tls
+  es:
+    host: elasticsearch
+    port: 9200
+
+input:
+  name: tail
+  path: /var/log/containers/*.log
+  parser: docker
+  tag: kube.*
+  refreshInterval: 5
+  memBufLimit: 5MB
+  skipLongLines: On
+  positionStore: /fluent-bit/storage/logs.db
+
+filter:
+  kubeURL: https://kubernetes.default.svc:443
+  kubeCAFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  kubeTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+metrics:
+  enabled: true
+  listen: 0.0.0.0
+  port: 2020
+
+fluent-bit:
+  image:
+    repository: banzaicloud/fluent-bit
+    tag: latest
+
+  existingConfigMap: "fluent-bit-config"
+
+  podAnnotation:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/api/v1/metrics/prometheus"
+    prometheus.io/port: "2020"
+
+  extraVolumes: 
+    - name: position-store
+      emptyDir: {}
+    - name: fluent-tls
+      secret:
+        secretName: fluent-tls
+  extraVolumeMounts:
+    - name: position-store
+      mountPath: /fluent-bit/storage
+    - name: fluent-tls
+      mountPath: /fluent-bit/ssl
+      readOnly: true
+  env:
+    - name: TLS_PRIVATE_KEY_PASSPHRASE
+      valueFrom:
+        secretKeyRef:
+          name: fluent-tls
+          key: server.key.passphrase
+    - name: SHARED_KEY
+      valueFrom:
+        secretKeyRef:
+          name: fluent-tls
+          key: fluent.shared.key
+
+
+fluentd:
+  extraVolumeMounts:
+    - name: tls-volume-{{ template "fluentd.fullname" . }}
+      mountPath: /fluentd/etc/ssl/
+      readOnly: true
+
+  extraVolumes:
+
+
+  env:
+    - name: TLS_PRIVATE_KEY_PASSPHRASE
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.transport.tls.secretName }}
+          key: server.key.passphrase
+
+  general.conf: |
+    # Prevent fluentd from handling records containing its own logs. Otherwise
+    # it can lead to an infinite loop, when error in sending one message generates
+    # another message which also fails to be sent and so on.
+    <match **>
+      @type null
+    </match>
+
+    # Used for health checking
+    <source>
+      @type http
+      port 9880
+      bind 0.0.0.0
+    </source>
+    <source>
+      @type prometheus
+    </source>
+    <source>
+      @type   forward
+      port    24231
+      @log_level debug
+      <security>
+        self_hostname fluentd
+        shared_key fluentd
+      </security>
+      <transport tls>
+        version                TLSv1_2
+        ca_path                /fluentd/etc/ssl/ca.crt.pem
+        cert_path              /fluentd/etc/ssl/server.crt.pem
+        private_key_path       /fluentd/etc/ssl/server.key.pem
+        private_key_passphrase "#{ENV["TLS_PRIVATE_KEY_PASSPHRASE"]}"
+        client_cert_auth       true
+      </transport>
+    </source>
+  system.conf: |-
+    <system>
+      root_dir /tmp/fluentd-buffers/
+    </system>
+
+  output.conf: |
+     <match **>
+       @id elasticsearch
+       @type elasticsearch
+       @log_level info
+       include_tag_key true
+       # Replace with the host/port to your Elasticsearch cluster.
+       host "#{ENV['ES_OUTPUT_HOST']}"
+       port "#{ENV['ES_OUTPUT_PORT']}"
+       logstash_format true
+       <buffer>
+         @type file
+         path /var/log/fluentd-buffers/kubernetes.system.buffer
+         flush_mode interval
+         retry_type exponential_backoff
+         flush_thread_count 2
+         flush_interval 5s
+         retry_forever
+         retry_max_interval 30
+         chunk_limit_size "#{ENV['ES_BUFFER_CHUNK_LIMIT']}"
+         queue_limit_length "#{ENV['ES_BUFFER_QUEUE_LIMIT']}"
+         overflow_action block
+       </buffer>
+     </match>
