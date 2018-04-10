@@ -1,7 +1,8 @@
 dependencies:
 - name: fluent-bit
-  version: 0.3.0
-  repository: https://banzaicloud-stable.banzacloud.com/
+  version: 0.4.0
+  repository: https://kubernetes-charts.storage.googleapis.com
+
 - name: fluentd
   version: 0.1.0
-  repository: https://banzaicloud-stable.banzacloud.com/
+  repository: alias:banzaicloud-stable
