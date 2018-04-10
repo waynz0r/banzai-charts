@@ -8,10 +8,6 @@ backend:
     tls:
       enabled: true
       verify: Off
-      secretname: fluent-tls
-  es:
-    host: elasticsearch
-    port: 9200
 
 input:
   name: tail
@@ -48,25 +44,25 @@ fluent-bit:
   extraVolumes: 
     - name: position-store
       emptyDir: {}
-    - name: fluent-tls
+    - name: fluentbit-tls
       secret:
-        secretName: fluent-tls
+        secretName: fluentbit-tls
   extraVolumeMounts:
     - name: position-store
       mountPath: /fluent-bit/storage
-    - name: fluent-tls
+    - name: fluentbit-tls
       mountPath: /fluent-bit/ssl
       readOnly: true
   env:
     - name: TLS_PRIVATE_KEY_PASSPHRASE
       valueFrom:
         secretKeyRef:
-          name: fluent-tls
+          name: fluentbit-tls
           key: server.key.passphrase
     - name: SHARED_KEY
       valueFrom:
         secretKeyRef:
-          name: fluent-tls
+          name: fluentbit-tls
           key: fluent.shared.key
 
 fluentd:
@@ -83,12 +79,12 @@ fluentd:
   configMapOverrideName: "fluentd-config"
 
   extraVolumes:
-    - name: fluent-tls
+    - name: fluentd-tls
       secret:
-        secretName: fluent-tls
+        secretName: fluentd-tls
 
   extraVolumeMounts:
-    - name: fluent-tls
+    - name: fluentd-tls
       mountPath: /fluentd/etc/ssl/
       readOnly: true
 
@@ -96,11 +92,11 @@ fluentd:
     - name: TLS_PRIVATE_KEY_PASSPHRASE
       valueFrom:
         secretKeyRef:
-          name: fluent-tls
+          name: fluentd-tls
           key: server.key.passphrase
 
     - name: SHARED_KEY
       valueFrom:
         secretKeyRef:
-          name: fluent-tls
+          name: fluentd-tls
           key: fluent.shared.key
