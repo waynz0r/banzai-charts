@@ -31,6 +31,17 @@ data:
       port 24220
       tag fluentd.monitor.metrics
     </source>
+    # Prometheus plugins
+    <source>
+      @type prometheus
+      port 24231
+    </source>
+    <source>
+      @type prometheus_monitor
+    </source>
+    <source>
+      @type prometheus_output_monitor
+    </source>
   system.conf: |-
     <system>
       root_dir /tmp/fluentd-buffers/
