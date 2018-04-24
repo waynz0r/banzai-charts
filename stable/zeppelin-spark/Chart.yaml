@@ -5,8 +5,6 @@ home: https://banzaicloud.com
 sources:
   - https://github.com/banzaicloud/zeppelin
   - https://github.com/banzaicloud/spark
-tags:
-- spotguide
 keywords:
 - spark
 - zeppelin
