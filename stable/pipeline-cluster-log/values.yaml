@@ -3,8 +3,8 @@
 backend:
   type: forward
   forward:
-    host: fluentd
-    port: 24284
+    host: logging-fluentd
+    port: 24240
     tls:
       enabled: true
       verify: Off
@@ -13,7 +13,7 @@ input:
   name: tail
   path: /var/log/containers/*.log
   parser: docker
-  tag: kube.*
+  tag: kuberenetes
   refreshInterval: 5
   memBufLimit: 5MB
   skipLongLines: On
@@ -23,6 +23,7 @@ filter:
   kubeURL: https://kubernetes.default.svc:443
   kubeCAFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
   kubeTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+  mergeJSONLog: On
 
 metrics:
   enabled: true
@@ -31,8 +32,10 @@ metrics:
 
 fluent-bit:
   image:
-    repository: banzaicloud/fluent-bit
-    tag: latest
+    fluent_bit:
+      repository: banzaicloud/fluent-bit
+      tag: latest
+    pullPolicy: Always
 
   existingConfigMap: "fluent-bit-config"
 
@@ -66,7 +69,26 @@ fluent-bit:
           key: fluent.shared.key
 
 fluentd:
-  plugins: {}
+  plugins:
+    elasticsearch:
+      enabled: false
+      env:
+        ES_OUTPUT_HOST: elasticsearch
+        ES_OUTPUT_PORT: 9200
+
+  service:
+    type: ClusterIP
+    externalPort: 80
+    ports:
+      - name: "monitor-agent"
+        protocol: TCP
+        containerPort: 24220
+      - name: "fluent-input"
+        protocol: TCP
+        containerPort: 24240
+      - name: "prometheus-input"
+        protocol: TCP
+        containerPort: 24231
 
   image:
     repository: banzaicloud/fluentd
