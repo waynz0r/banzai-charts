@@ -23,7 +23,7 @@ data:
         Name             {{ .Values.input.name }}
         Path             {{ .Values.input.path }}
         Parser           {{ .Values.input.parser }}
-        Tag              {{ .Values.input.tag }}
+        Tag              {{ .Values.input.tag }}.*
         Refresh_Interval {{ .Values.input.refreshInterval }}
         Mem_Buf_Limit    {{ .Values.input.memBufLimit }}
         Skip_Long_Lines  {{ .Values.input.skipLongLines }}
@@ -33,7 +33,7 @@ data:
 
     [FILTER]
         Name             kubernetes
-        Match            kube.*
+        Match            {{ .Values.input.tag }}.*
         Kube_URL         {{ .Values.filter.kubeURL }}
         Kube_CA_File     {{ .Values.filter.kubeCAFile }}
         Kube_Token_File  {{ .Values.filter.kubeTokenFile }}
