@@ -18,6 +18,10 @@ spec:
       labels:
         app: {{ template "fluentd.name" . }}
         release: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "24231"
     spec:
 {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
@@ -64,10 +68,8 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 1
         volumeMounts:
-        {{- if (empty .Values.configMapOverrideName) }}
         - name: config-volume-{{ template "fluentd.fullname" . }}
           mountPath: /fluentd/etc/conf.d
-        {{- end }}
 {{- if .Values.extraVolumeMounts }}
 {{ toYaml .Values.extraVolumeMounts | indent 8 }}
 {{- end }}
