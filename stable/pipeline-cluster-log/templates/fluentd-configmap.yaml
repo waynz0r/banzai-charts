@@ -8,7 +8,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
-  general.conf: |
+  01general.conf: |
     # Prevent fluentd from handling records containing its own logs. Otherwise
     # it can lead to an infinite loop, when error in sending one message generates
     # another message which also fails to be sent and so on.
@@ -34,22 +34,38 @@ data:
       @type prometheus
     </source>
     <source>
+      @type prometheus_monitor
+    </source>
+    <source>
+      @type prometheus_output_monitor
+    </source>
+    <source>
       @type   forward
-      port    24231
+      port    {{ .Values.backend.forward.port }}
       @log_level debug
       <security>
         self_hostname fluentd
-        shared_key fluentd
+        shared_key "#{ENV['SHARED_KEY']}"
       </security>
       <transport tls>
         version                TLSv1_2
         ca_path                /fluentd/etc/ssl/ca.crt.pem
         cert_path              /fluentd/etc/ssl/server.crt.pem
         private_key_path       /fluentd/etc/ssl/server.key.pem
-        private_key_passphrase "#{ENV["TLS_PRIVATE_KEY_PASSPHRASE"]}"
+        private_key_passphrase "#{ENV['TLS_PRIVATE_KEY_PASSPHRASE']}"
         client_cert_auth       true
       </transport>
     </source>
+
+  05filter.conf: |-
+    <match kubernetes.**>
+      @type rewrite_tag_filter
+      <rule>
+        key $['kubernetes']['labels']['app']
+        pattern ^(.+)$
+        tag $1.test
+      </rule>
+    </match>
   system.conf: |-
     <system>
       root_dir /tmp/fluentd-buffers/
@@ -57,7 +73,7 @@ data:
 
 {{ if .Values.fluentd.plugins.elasticsearch }}
 {{ if .Values.fluentd.plugins.elasticsearch.enabled }}
-  output.conf: |
+  09output.conf: |
     <match **>
       @id elasticsearch
       @type elasticsearch
@@ -65,18 +81,18 @@ data:
       include_tag_key true
       host "#{ENV['ES_OUTPUT_HOST']}"
       port "#{ENV['ES_OUTPUT_PORT']}"
-      logstash_format true
+      logstash_prefix ${tag}
       <buffer>
         @type file
-        path /var/log/fluentd-buffers/elasticsearch.all.buffer
+        path /tmp/fluentd-buffers/elasticsearch.all.buffer
         flush_mode interval
         flush_interval 5s
         flush_thread_count 3
         retry_max_interval 60
         retry_forever
         retry_type exponential_backoff
-        chunk_limit_size "#{ENV['ES_BUFFER_CHUNK_LIMIT']}"
-        queue_limit_length "#{ENV['ES_BUFFER_QUEUE_LIMIT']}"
+        chunk_limit_size 20
+        queue_limit_length 5
         overflow_action block
       </buffer>
     </match>
