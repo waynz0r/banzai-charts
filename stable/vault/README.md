@@ -25,8 +25,8 @@ To install the chart, use the following, this backs Vault with a Consul cluster:
 
 ```
 helm init -c; 
-helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com
-helm install banzaicloud-stable/vault --set vault.dev=false --set vault.config.storage.consul.address="myconsul-svc-name:8500",vault.config.storage.consul.path="vault"
+helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch/master
+helm install banzaicloud-stable/vault --set vault.config.storage.consul.address="myconsul-svc-name:8500",vault.config.storage.consul.path="vault"
 ```
 
 An alternative example using the Amazon S3 backend can be specified using:
@@ -51,9 +51,9 @@ The following tables lists the configurable parameters of the vault chart and th
 | `image.pullPolicy`      | Container pull policy               | `IfNotPresent`                                      |
 | `image.repository`      | Container image to use              | `vault`                                             |
 | `image.tag`             | Container image tag to deploy       | `0.9.1`                                             |
-| `vault.dev`             | Use Vault in dev mode               | true (set to false in production)                   |
 | `vault.customSecrets`   | Custom secrets available to Vault   | `[]`                                                |
 | `vault.config`          | Vault configuration                 | No default backend                                  |
+| `vault.externalConfig`  | Vault API based configuration       | No default backend                                  |
 | `replicaCount`          | k8s replicas                        | `1`                                                 |
 | `resources.limits.cpu`  | Container requested CPU             | `nil`                                               |
 | `resources.limits.memory` | Container requested memory        | `nil`                                               |
