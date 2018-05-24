@@ -9,3 +9,5 @@ keywords:
 - aws
 - lifecycle
 - hollowtrees
+annotations:
+  display_name: "Spot Termination Exporter"
