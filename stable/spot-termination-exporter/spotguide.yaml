@@ -1,0 +1,18 @@
+
+options:
+  - name: SpotPort
+    type: text
+    info: "Bind address for the spot termination exporter"
+    default: true
+    key: spotTerminationexporter.bindAddr
+
+depends:
+  - monitor:
+      type: crd
+      values:
+          - etcdclusters.etcd.database.coreos.com 
+      namespace: default
+      chart:
+        - name: etcd-operator
+          repository: alias:banzaicloud-stable
+          version: 0.0.1
