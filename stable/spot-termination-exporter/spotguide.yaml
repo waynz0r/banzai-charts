@@ -13,6 +13,6 @@ depends:
         - etcdclusters.etcd.database.coreos.com 
     namespace: default
     chart:
-      - name: etcd-operator
+        name: etcd-operator
         repository: alias:banzaicloud-stable
         version: 0.0.1
