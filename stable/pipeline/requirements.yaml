@@ -5,5 +5,5 @@ dependencies:
   condition: mariadb.enabled
 
 - name: vault
-  version: 0.5.3
+  version: 0.5.5
   repository: alias:banzaicloud-stable
